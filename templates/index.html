@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex-between" style="margin-bottom: 2rem;">
+    <h2>Dashboard</h2>
+    <div style="display: flex; gap: 1rem;">
+        <button class="btn btn-primary" onclick="openModal('userModal')">
+            <span style="margin-right: 0.5rem; font-size: 1.25rem;">+</span> Add User
+        </button>
+        <button class="btn btn-primary" onclick="openModal('choreModal')">
+            <span style="margin-right: 0.5rem; font-size: 1.25rem;">+</span> New Chore
+        </button>
+    </div>
+</div>
+
+<div style="display: flex; gap: 2rem; margin-bottom: 3rem;">
+    <!-- Active User Selector -->
+    <div class="card" style="flex: 1; max-width: 300px;">
+        <h3 style="margin-bottom: 1rem;">Who is completing this?</h3>
+        <select id="userSelect" onchange="updateActiveUser()">
+            <option value="">Select a user...</option>
+            <!-- Populated by JS -->
+        </select>
+        <div id="userStats" style="margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <!-- Stats Preview (Leaderboard) -->
+    <div class="card" style="flex: 2;">
+        <h3 style="margin-bottom: 1rem;">Leaderboard</h3>
+        <div id="leaderboardList" style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+</div>
+
+<h3 style="margin-bottom: 1.5rem;">Active Chores</h3>
+<div id="choreList" class="grid">
+    <!-- Populated by JS -->
+    <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">
+        Loading chores...
+    </div>
+</div>
+
+<!-- Modals -->
+<div id="userModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 1rem;">Add New User</h3>
+        <form onsubmit="handleAddUser(event)">
+            <input type="text" id="newUsername" placeholder="Username" required>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn btn-danger" onclick="closeModal('userModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create User</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="choreModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 1rem;">Create New Chore</h3>
+        <form onsubmit="handleAddChore(event)">
+            <input type="text" id="choreTitle" placeholder="Chore Title (e.g., Wash Dishes)" required>
+            <textarea id="choreDesc" placeholder="Description (optional)" rows="3"></textarea>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <input type="number" id="chorePoints" placeholder="Points" required min="1" value="10">
+                <div
+                    style="display: flex; align-items: center; gap: 0.5rem; background: #0f172a; border: 1px solid var(--border); border-radius: var(--radius); padding: 0 1rem; height: 46px; margin-bottom: 1rem;">
+                    <input type="checkbox" id="choreRecurring" style="width: auto; margin: 0;">
+                    <label for="choreRecurring" style="cursor: pointer; user-select: none;">Recurring</label>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                <button type="button" class="btn btn-danger" onclick="closeModal('choreModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Chore</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex-between" style="margin-bottom: 2rem;">
+    <h2>Statistics & Rewards</h2>
+</div>
+
+<div class="grid" style="margin-bottom: 3rem;">
+    <!-- Points Distribution -->
+    <div class="card">
+        <h3 style="margin-bottom: 1rem;">Points Leaderboard</h3>
+        <canvas id="distributionChart"></canvas>
+    </div>
+
+    <!-- Daily Activity -->
+    <div class="card" style="grid-column: span 2;">
+        <h3 style="margin-bottom: 1rem;">Activity Momentum (Last 7 Days)</h3>
+        <canvas id="timelineChart"></canvas>
+    </div>
+</div>
+
+<h3>Activity History</h3>
+<div class="card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid var(--border);">
+                <th style="padding: 1rem;">User</th>
+                <th style="padding: 1rem;">Chore</th>
+                <th style="padding: 1rem;">Points</th>
+                <th style="padding: 1rem;">Time</th>
+            </tr>
+        </thead>
+        <tbody id="statsTableBody">
+            <tr>
+                <td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">Loading history...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Load Charts
+        try {
+            const res = await fetch('/api/stats/charts');
+            const data = await res.json();
+            renderCharts(data);
+        } catch (err) {
+            console.error('Failed to load charts', err);
+        }
+
+        // Load History (existing logic)
+        try {
+            const res = await fetch('/api/stats/history');
+            const data = await res.json();
+
+            const tbody = document.getElementById('statsTableBody');
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="padding: 2rem; text-align: center; color: var(--text-muted);">No activity recorded yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(log => `
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 1rem; font-weight: bold;">${log.username}</td>
+                    <td style="padding: 1rem;">${log.chore_title}</td>
+                    <td style="padding: 1rem;"><div class="badge">+${log.points_earned}</div></td>
+                    <td style="padding: 1rem; color: var(--text-muted); font-size: 0.9rem;">${new Date(log.completed_at).toLocaleString()}</td>
+                </tr>
+            `).join('');
+
+        } catch (err) {
+            console.error('Failed to load history', err);
+        }
+    });
+
+    function renderCharts(data) {
+        // 1. Distribution Chart (Doughnut)
+        const distCtx = document.getElementById('distributionChart').getContext('2d');
+        const userNames = Object.keys(data.distribution);
+        const userPoints = Object.values(data.distribution);
+
+        new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: userNames,
+                datasets: [{
+                    data: userPoints,
+                    backgroundColor: [
+                        '#6366f1', '#ec4899', '#22c55e', '#f59e0b', '#8b5cf6'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+                }
+            }
+        });
+
+        // 2. Timeline Chart (Bar)
+        const timeCtx = document.getElementById('timelineChart').getContext('2d');
+        const dates = data.timeline.dates;
+        const timelineData = data.timeline.data; // {date: {user: points}}
+
+        // We need a dataset for each user found in the distribution
+        // (Assuming all users in timeline exist in distribution keys, or at least we iterate known users)
+        // A better way: Collect all unique users from timeline data if they might have 0 total points but some activity (unlikely with current logic)
+        // We'll use the userNames from distribution for simplicity
+
+        const datasets = userNames.map((user, index) => {
+            const pointsPerDay = dates.map(date => {
+                return (timelineData[date] && timelineData[date][user]) || 0;
+            });
+
+            const colors = ['#6366f1', '#ec4899', '#22c55e', '#f59e0b', '#8b5cf6'];
+
+            return {
+                label: user,
+                data: pointsPerDay,
+                backgroundColor: colors[index % colors.length],
+                borderRadius: 4
+            };
+        });
+
+        new Chart(timeCtx, {
+            type: 'bar',
+            data: {
+                labels: dates,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    y: {
+                        grid: { color: '#334155' },
+                        ticks: { color: '#94a3b8' },
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } }
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}
