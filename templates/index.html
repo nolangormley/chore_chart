@@ -7,7 +7,7 @@
         <button class="btn btn-primary" onclick="openModal('userModal')">
             <span style="margin-right: 0.5rem; font-size: 1.25rem;">+</span> Add User
         </button>
-        <button class="btn btn-primary" onclick="openModal('choreModal')">
+        <button class="btn btn-primary" onclick="openChoreModal()">
             <span style="margin-right: 0.5rem; font-size: 1.25rem;">+</span> New Chore
         </button>
     </div>
@@ -35,11 +35,19 @@
     </div>
 </div>
 
-<h3 style="margin-bottom: 1.5rem;">Active Chores</h3>
-<div id="choreList" class="grid">
+<h3 style="margin-bottom: 1.5rem;">Recurring Tasks</h3>
+<div id="recurringChoreList" class="grid" style="margin-bottom: 3rem;">
     <!-- Populated by JS -->
     <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">
-        Loading chores...
+        No recurring tasks found.
+    </div>
+</div>
+
+<h3 style="margin-bottom: 1.5rem;">One-time Tasks</h3>
+<div id="oneOffChoreList" class="grid">
+    <!-- Populated by JS -->
+    <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">
+        No one-time tasks found.
     </div>
 </div>
 
@@ -59,8 +67,9 @@
 
 <div id="choreModal" class="modal">
     <div class="modal-content">
-        <h3 style="margin-bottom: 1rem;">Create New Chore</h3>
-        <form onsubmit="handleAddChore(event)">
+        <h3 id="choreModalTitle" style="margin-bottom: 1rem;">Create New Chore</h3>
+        <form onsubmit="handleSaveChore(event)">
+            <input type="hidden" id="choreId">
             <input type="text" id="choreTitle" placeholder="Chore Title (e.g., Wash Dishes)" required>
             <textarea id="choreDesc" placeholder="Description (optional)" rows="3"></textarea>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

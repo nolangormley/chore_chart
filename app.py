@@ -62,6 +62,23 @@ def handle_chores():
     chores = Chore.query.filter_by(is_deleted=False).order_by(Chore.created_at.desc()).all()
     return jsonify([c.to_dict() for c in chores])
 
+@app.route('/api/chores/<int:chore_id>', methods=['PUT'])
+def update_chore(chore_id):
+    chore = Chore.query.get_or_404(chore_id)
+    data = request.json
+    
+    if 'title' in data:
+        chore.title = data['title']
+    if 'description' in data:
+        chore.description = data['description']
+    if 'points' in data:
+        chore.points = int(data['points'])
+    if 'is_recurring' in data:
+        chore.is_recurring = data['is_recurring']
+        
+    db.session.commit()
+    return jsonify(chore.to_dict())
+
 @app.route('/api/chores/<int:chore_id>/complete', methods=['POST'])
 def complete_chore(chore_id):
     data = request.json

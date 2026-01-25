@@ -25,7 +25,7 @@ class Chore(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        return {
+        data = {
             'id': self.id,
             'title': self.title,
             'description': self.description,
@@ -33,6 +33,13 @@ class Chore(db.Model):
             'is_recurring': self.is_recurring,
             'created_at': self.created_at.isoformat()
         }
+        
+        if self.is_recurring and self.logs:
+            # Find the most recent log
+            last_log = max(self.logs, key=lambda x: x.completed_at)
+            data['last_completed_at'] = last_log.completed_at.isoformat()
+            
+        return data
 
 class ChoreLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

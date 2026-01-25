@@ -35,14 +35,14 @@ async function fetchChores() {
 async function handleAddUser(e) {
     e.preventDefault();
     const username = document.getElementById('newUsername').value;
-    
+
     try {
         const res = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username })
         });
-        
+
         if (res.ok) {
             closeModal('userModal');
             document.getElementById('newUsername').value = '';
@@ -55,29 +55,29 @@ async function handleAddUser(e) {
     }
 }
 
-async function handleAddChore(e) {
+async function handleSaveChore(e) {
     e.preventDefault();
+    const id = document.getElementById('choreId').value;
     const title = document.getElementById('choreTitle').value;
     const description = document.getElementById('choreDesc').value;
     const points = document.getElementById('chorePoints').value;
     const is_recurring = document.getElementById('choreRecurring').checked;
-    
+
+    const url = id ? `/api/chores/${id}` : '/api/chores';
+    const method = id ? 'PUT' : 'POST';
+
     try {
-        const res = await fetch('/api/chores', {
-            method: 'POST',
+        const res = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title, description, points, is_recurring })
         });
-        
+
         if (res.ok) {
             closeModal('choreModal');
-            // reset form
-            document.getElementById('choreTitle').value = '';
-            document.getElementById('choreDesc').value = '';
-            document.getElementById('choreRecurring').checked = false;
             fetchChores();
         } else {
-            alert('Failed to create chore');
+            alert('Failed to save chore');
         }
     } catch (err) {
         console.error(err);
@@ -90,16 +90,16 @@ async function completeChore(choreId, points) {
         document.getElementById('userSelect').focus();
         return;
     }
-    
+
     if (!confirm(`Mark this chore as done by ${activeUser.username} for ${points} points?`)) return;
-    
+
     try {
         const res = await fetch(`/api/chores/${choreId}/complete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: activeUser.id })
         });
-        
+
         if (res.ok) {
             // Refresh data
             await fetchUsers();
@@ -112,12 +112,12 @@ async function completeChore(choreId, points) {
 
 async function deleteChore(choreId) {
     if (!confirm('Are you sure you want to delete this chore?')) return;
-    
+
     try {
         const res = await fetch(`/api/chores/${choreId}`, {
             method: 'DELETE'
         });
-        
+
         if (res.ok) {
             fetchChores();
         }
@@ -131,28 +131,28 @@ async function deleteChore(choreId) {
 function renderUserSelect() {
     const select = document.getElementById('userSelect');
     const currentVal = select.value;
-    
-    select.innerHTML = '<option value="">Select a user...</option>' + 
+
+    select.innerHTML = '<option value="">Select a user...</option>' +
         users.map(u => `<option value="${u.id}">${u.username} (${u.total_points} pts)</option>`).join('');
-    
+
     if (currentVal && users.find(u => u.id == currentVal)) {
         select.value = currentVal;
     } else if (users.length === 1) {
-         // Auto-select if only one item available? No, explicit is better.
+        // Auto-select if only one item available? No, explicit is better.
     }
-    updateActiveUser(); 
+    updateActiveUser();
 }
 
 function updateActiveUser() {
     const id = document.getElementById('userSelect').value;
     const statsDiv = document.getElementById('userStats');
-    
+
     if (!id) {
         activeUser = null;
         statsDiv.textContent = 'Select yourself to start earning points';
         return;
     }
-    
+
     activeUser = users.find(u => u.id == id);
     if (activeUser) {
         statsDiv.innerHTML = `Current Points: <strong style="color: var(--primary)">${activeUser.total_points}</strong>`;
@@ -165,10 +165,10 @@ function renderLeaderboard() {
         container.innerHTML = '<div style="color: var(--text-muted)">No users yet</div>';
         return;
     }
-    
+
     // Sort by points desc
     const sorted = [...users].sort((a, b) => b.total_points - a.total_points);
-    
+
     container.innerHTML = sorted.map((u, index) => `
         <div style="background: var(--background); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); min-width: 150px; text-align: center;">
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">#${index + 1}</div>
@@ -179,14 +179,13 @@ function renderLeaderboard() {
 }
 
 function renderChores() {
-    const container = document.getElementById('choreList');
-    
-    if (!chores.length) {
-        container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 3rem; background: var(--surface); border-radius: var(--radius); border: 1px dashed var(--border);">No active chores. Create one to get started!</div>';
-        return;
-    }
-    
-    container.innerHTML = chores.map(c => `
+    const recurringContainer = document.getElementById('recurringChoreList');
+    const oneOffContainer = document.getElementById('oneOffChoreList');
+
+    const recurring = chores.filter(c => c.is_recurring).sort((a, b) => b.points - a.points);
+    const oneOff = chores.filter(c => !c.is_recurring).sort((a, b) => b.points - a.points);
+
+    const renderCard = (c) => `
         <div class="card fade-in" style="display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div class="flex-between" style="margin-bottom: 0.5rem; align-items: flex-start;">
@@ -196,19 +195,71 @@ function renderChores() {
                 <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">
                     ${c.description || 'No description'}
                 </p>
-                ${c.is_recurring ? '<div style="font-size: 0.8rem; color: var(--secondary); margin-bottom: 1rem;"><span style="display:inline-block; transform: rotate(45deg); margin-right:4px;">↻</span> Recurring</div>' : ''}
+                ${c.is_recurring ? `
+                    <div style="font-size: 0.8rem; color: var(--secondary); margin-bottom: 1rem;">
+                        <span style="display:inline-block; transform: rotate(45deg); margin-right:4px;">↻</span> Recurring
+                        ${c.last_completed_at ? `<span style="color: var(--text-muted);"> • Last done: ${new Date(c.last_completed_at).toLocaleDateString()}</span>` : ''}
+                    </div>`
+            : ''}
             </div>
             
             <div class="flex-between" style="border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;">
-                <button class="btn btn-danger" onclick="deleteChore(${c.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                    Delete
-                </button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn" onclick="openChoreModal(${c.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--surface); border: 1px solid var(--border); color: var(--text);">
+                        Edit
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteChore(${c.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                        Delete
+                    </button>
+                </div>
                 <button class="btn btn-primary" onclick="completeChore(${c.id}, ${c.points})">
                     Complete
                 </button>
             </div>
         </div>
-    `).join('');
+    `;
+
+    if (!recurring.length) {
+        recurringContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">No recurring tasks found.</div>';
+    } else {
+        recurringContainer.innerHTML = recurring.map(renderCard).join('');
+    }
+
+    if (!oneOff.length) {
+        oneOffContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">No one-time tasks found.</div>';
+    } else {
+        oneOffContainer.innerHTML = oneOff.map(renderCard).join('');
+    }
+}
+
+function openChoreModal(choreId = null) {
+    const titleEl = document.getElementById('choreModalTitle');
+    const idInput = document.getElementById('choreId');
+    const titleInput = document.getElementById('choreTitle');
+    const descInput = document.getElementById('choreDesc');
+    const pointsInput = document.getElementById('chorePoints');
+    const recurringInput = document.getElementById('choreRecurring');
+
+    if (choreId) {
+        const chore = chores.find(c => c.id === choreId);
+        if (!chore) return;
+
+        titleEl.textContent = 'Edit Chore';
+        idInput.value = choreId;
+        titleInput.value = chore.title;
+        descInput.value = chore.description || '';
+        pointsInput.value = chore.points;
+        recurringInput.checked = chore.is_recurring;
+    } else {
+        titleEl.textContent = 'Create New Chore';
+        idInput.value = '';
+        titleInput.value = '';
+        descInput.value = '';
+        pointsInput.value = '10';
+        recurringInput.checked = false;
+    }
+
+    openModal('choreModal');
 }
 
 
@@ -225,7 +276,7 @@ function closeModal(id) {
 }
 
 // Close modal on outside click
-window.onclick = function(event) {
+window.onclick = function (event) {
     if (event.target.classList.contains('modal')) {
         event.target.classList.remove('active');
     }
