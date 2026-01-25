@@ -1,27 +1,63 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db
 from models import User, Chore, ChoreLog
 import os
 
 app = Flask(__name__)
+app.secret_key = 'dev-secret-key-change-this-for-production' # Required for session management
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chore_chart.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 with app.app_context():
     db.create_all()
 
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
 @app.route('/stats')
+@login_required
 def stats():
     return render_template('stats.html')
 
+# Auth Routes
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            login_user(user)
+            return redirect(url_for('index'))
+        
+        flash('Invalid username or password')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 # API Routes
 @app.route('/api/users', methods=['GET', 'POST'])
+@login_required
 def handle_users():
     if request.method == 'POST':
         data = request.json
@@ -40,6 +76,7 @@ def handle_users():
     return jsonify([u.to_dict() for u in users])
 
 @app.route('/api/chores', methods=['GET', 'POST'])
+@login_required
 def handle_chores():
     if request.method == 'POST':
         data = request.json
@@ -63,6 +100,7 @@ def handle_chores():
     return jsonify([c.to_dict() for c in chores])
 
 @app.route('/api/chores/<int:chore_id>', methods=['PUT'])
+@login_required
 def update_chore(chore_id):
     chore = Chore.query.get_or_404(chore_id)
     data = request.json
@@ -80,6 +118,7 @@ def update_chore(chore_id):
     return jsonify(chore.to_dict())
 
 @app.route('/api/chores/<int:chore_id>/complete', methods=['POST'])
+@login_required
 def complete_chore(chore_id):
     data = request.json
     user_id = data.get('user_id')
@@ -114,6 +153,7 @@ def complete_chore(chore_id):
     })
 
 @app.route('/api/chores/<int:chore_id>', methods=['DELETE'])
+@login_required
 def delete_chore(chore_id):
     chore = Chore.query.get_or_404(chore_id)
     chore.is_deleted = True
@@ -121,11 +161,13 @@ def delete_chore(chore_id):
     return jsonify({'message': 'Chore deleted'})
 
 @app.route('/api/stats/history', methods=['GET'])
+@login_required
 def get_stats_history():
     logs = ChoreLog.query.order_by(ChoreLog.completed_at.desc()).limit(50).all()
     return jsonify([l.to_dict() for l in logs])
 
 @app.route('/api/stats/charts', methods=['GET'])
+@login_required
 def get_chart_data():
     # 1. Points Distribution (Total points per user)
     users = User.query.all()
@@ -160,4 +202,4 @@ def get_chart_data():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
