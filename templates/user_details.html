@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex-between" style="margin-bottom: 2rem;">
+    <h2>User Profile</h2>
+    <a href="{{ url_for('index') }}" class="btn" style="background: var(--surface); border: 1px solid var(--border);">
+        Back to Dashboard
+    </a>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; gap: 2rem; flex-wrap: wrap; align-items: start;">
+
+        <!-- Profile Picture Section -->
+        <div style="flex: 0 0 200px; text-align: center;">
+            <div style="position: relative; width: 150px; height: 150px; margin: 0 auto; border-radius: 50%; overflow: hidden; background: #334155; cursor: pointer;"
+                onclick="document.getElementById('profileUpload').click()">
+                <img id="profileImage" src="" alt="Profile Picture"
+                    style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                <div id="profilePlaceholder"
+                    style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #cbd5e1;">
+                    User
+                </div>
+                <div
+                    style="position: absolute; bottom: 0; width: 100%; background: rgba(0,0,0,0.6); color: white; padding: 0.25rem 0; font-size: 0.8rem;">
+                    Change Photo
+                </div>
+            </div>
+            <input type="file" id="profileUpload" accept="image/*" style="display: none;"
+                onchange="handleProfileUpload(this)">
+            <h3 id="displayUsername" style="margin-top: 1rem;">Loading...</h3>
+        </div>
+
+        <!-- Details Form -->
+        <div style="flex: 1; min-width: 300px;">
+            <form onsubmit="handleUpdateUser(event)">
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label for="firstName"
+                            style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">First Name</label>
+                        <input type="text" id="firstName" placeholder="First Name">
+                    </div>
+                    <div>
+                        <label for="lastName"
+                            style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Last Name</label>
+                        <input type="text" id="lastName" placeholder="Last Name">
+                    </div>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <label for="pronouns"
+                        style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Pronouns</label>
+                    <input type="text" id="pronouns" placeholder="e.g. they/them">
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <label for="email" style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Email
+                        Address</label>
+                    <input type="email" id="email" placeholder="user@example.com">
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; justify-content: flex-end;">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const userId = {{ user_id }};
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const res = await fetch(`/api/users/${userId}`);
+            if (!res.ok) throw new Error('User not found');
+            const data = await res.json();
+
+            // Populate fields
+            document.getElementById('displayUsername').innerText = data.username;
+            document.getElementById('firstName').value = data.first_name || '';
+            document.getElementById('lastName').value = data.last_name || '';
+            document.getElementById('pronouns').value = data.pronouns || '';
+            document.getElementById('email').value = data.email || '';
+
+            // Handle Profile Picture
+            if (data.profile_picture) {
+                document.getElementById('profileImage').src = data.profile_picture;
+                document.getElementById('profileImage').style.display = 'block';
+                document.getElementById('profilePlaceholder').style.display = 'none';
+            } else {
+                // Show initials or icon
+                document.getElementById('profilePlaceholder').innerText = data.username.substring(0, 2).toUpperCase();
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('Failed to load user details');
+        }
+    });
+
+    async function handleUpdateUser(event) {
+        event.preventDefault();
+
+        const payload = {
+            first_name: document.getElementById('firstName').value,
+            last_name: document.getElementById('lastName').value,
+            pronouns: document.getElementById('pronouns').value,
+            email: document.getElementById('email').value
+        };
+
+        try {
+            const res = await fetch(`/api/users/${userId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert('Profile updated successfully!');
+            } else {
+                alert('Failed to update profile.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error updating profile.');
+        }
+    }
+
+    async function handleProfileUpload(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+
+        try {
+            const res = await fetch(`/api/users/${userId}/upload-picture`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                // Update image
+                document.getElementById('profileImage').src = data.url;
+                document.getElementById('profileImage').style.display = 'block';
+                document.getElementById('profilePlaceholder').style.display = 'none';
+            } else {
+                alert('Failed to upload picture: ' + data.error);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error uploading picture.');
+        }
+    }
+</script>
+{% endblock %}

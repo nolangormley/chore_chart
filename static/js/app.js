@@ -169,13 +169,19 @@ function renderLeaderboard() {
     // Sort by points desc
     const sorted = [...users].sort((a, b) => b.total_points - a.total_points);
 
-    container.innerHTML = sorted.map((u, index) => `
-        <div style="background: var(--background); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); min-width: 150px; text-align: center;">
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">#${index + 1}</div>
+    container.innerHTML = sorted.map((u, index) => {
+        const rankOrImage = u.profile_picture
+            ? `<img src="${u.profile_picture}" alt="${u.username}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem; border: 2px solid var(--surface);">`
+            : `<div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">#${index + 1}</div>`;
+
+        return `
+        <div onclick="window.location.href='/user/${u.id}'" style="background: var(--background); padding: 1rem; border-radius: var(--radius); border: 1px solid var(--border); min-width: 150px; text-align: center; cursor: pointer; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center;" onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform='translateY(0)'">
+            ${rankOrImage}
             <div style="font-weight: bold; font-size: 1.1rem; margin-bottom: 0.25rem;">${u.username}</div>
             <div class="badge">${u.total_points} pts</div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function renderChores() {
@@ -204,12 +210,15 @@ function renderChores() {
             </div>
             
             <div class="flex-between" style="border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem;">
-                <div style="display: flex; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                     <button class="btn" onclick="openChoreModal(${c.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background: var(--surface); border: 1px solid var(--border); color: var(--text);">
                         Edit
                     </button>
                     <button class="btn btn-danger" onclick="deleteChore(${c.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                         Delete
+                    </button>
+                    <button class="btn btn-warning" onclick="openCalendarModal(${c.id})" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                        Calendar
                     </button>
                 </div>
                 <button class="btn btn-primary" onclick="completeChore(${c.id}, ${c.points})">
@@ -263,7 +272,82 @@ function openChoreModal(choreId = null) {
 }
 
 
+function openCalendarModal(choreId) {
+    if (!activeUser) {
+        showToast("Please select a user first to send a calendar invite.", "error");
+        // Focus the user select
+        const userSelect = document.getElementById('userSelect');
+        if (userSelect) {
+            userSelect.focus();
+            userSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+    }
+    document.getElementById('calendarChoreId').value = choreId;
+
+    // Set default date/time
+    const now = new Date();
+    document.getElementById('calendarDate').valueAsDate = now;
+    // Set time to next hour
+    now.setHours(now.getHours() + 1);
+    now.setMinutes(0);
+    const timeStr = now.toTimeString().substring(0, 5);
+    document.getElementById('calendarTime').value = timeStr;
+
+    openModal('calendarModal');
+}
+
+async function handleSendInvite(e) {
+    e.preventDefault();
+    const choreId = document.getElementById('calendarChoreId').value;
+    const dateVal = document.getElementById('calendarDate').value;
+    const timeVal = document.getElementById('calendarTime').value;
+    const recurrenceVal = document.getElementById('calendarRecurrence').value;
+
+    if (!activeUser) return;
+
+    // Combine date and time
+    // We create a date object then get ISO string
+    const dateTime = new Date(`${dateVal}T${timeVal}`);
+
+    try {
+        const res = await fetch(`/api/chores/${choreId}/invite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: activeUser.id,
+                datetime: dateTime.toISOString(),
+                recurrence: recurrenceVal
+            })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            showToast(data.message, 'success');
+            closeModal('calendarModal');
+        } else {
+            showToast(data.error || 'Unknown error', 'error');
+        }
+    } catch (err) {
+        console.error(err);
+        showToast('Failed to send invite', 'error');
+    }
+}
+
+
 // -- UI Helpers --
+function showToast(message, type = 'success') {
+    const toaster = document.getElementById('toaster');
+    toaster.innerText = message;
+    toaster.className = ''; // reset
+    toaster.classList.add('show', type);
+
+    // Clear previous timeout if any (simple implementation doesn't track it, but okay for basic usage)
+    setTimeout(() => {
+        toaster.classList.remove('show');
+    }, 3000);
+}
 function openModal(id) {
     document.getElementById(id).classList.add('active');
     // Focus first input

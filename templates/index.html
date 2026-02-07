@@ -29,7 +29,7 @@
     <!-- Stats Preview (Leaderboard) -->
     <div class="card" style="flex: 2;">
         <h3 style="margin-bottom: 1rem;">Leaderboard</h3>
-        <div id="leaderboardList" style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
+        <div id="leaderboardList" style="display: flex; gap: 1rem; flex-wrap: wrap;">
             <!-- Populated by JS -->
         </div>
     </div>
@@ -84,6 +84,33 @@
             <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
                 <button type="button" class="btn btn-danger" onclick="closeModal('choreModal')">Cancel</button>
                 <button type="submit" class="btn btn-primary">Create Chore</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="calendarModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 1rem;">Add to Calendar</h3>
+        <p style="color: var(--text-muted); margin-bottom: 1rem;">Choose a date and time for this chore.</p>
+        <form onsubmit="handleSendInvite(event)">
+            <input type="hidden" id="calendarChoreId">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <input type="date" id="calendarDate" required>
+                <input type="time" id="calendarTime" required>
+            </div>
+            <div style="margin-top: 1rem;">
+                <label for="calendarRecurrence"
+                    style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Recurrence</label>
+                <select id="calendarRecurrence">
+                    <option value="">One-time</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Bi-weekly (Every 2 weeks)</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                <button type="button" class="btn btn-danger" onclick="closeModal('calendarModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Send Invite</button>
             </div>
         </form>
     </div>

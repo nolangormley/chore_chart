@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,22 +11,26 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block head %}{% endblock %}
 </head>
+
 <body>
     <div class="container">
         <header>
             <h1>Chore Chart</h1>
             <nav>
-                <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' else '' }}">Dashboard</a>
+                <a href="{{ url_for('index') }}"
+                    class="{{ 'active' if request.endpoint == 'index' else '' }}">Dashboard</a>
                 <a href="{{ url_for('stats') }}" class="{{ 'active' if request.endpoint == 'stats' else '' }}">Stats</a>
             </nav>
         </header>
-        
+
         <main>
             {% block content %}{% endblock %}
+            <div id="toaster"></div>
         </main>
     </div>
-    
+
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
+
 </html>

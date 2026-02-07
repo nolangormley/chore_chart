@@ -10,6 +10,11 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     total_points = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    first_name = db.Column(db.String(80))
+    last_name = db.Column(db.String(80))
+    pronouns = db.Column(db.String(20))
+    email = db.Column(db.String(120))
+    profile_picture = db.Column(db.String(255))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -22,7 +27,12 @@ class User(UserMixin, db.Model):
             'id': self.id,
             'username': self.username,
             'total_points': self.total_points,
-            'created_at': self.created_at.isoformat()
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'pronouns': self.pronouns,
+            'email': self.email,
+            'profile_picture': self.profile_picture
         }
 
 class Chore(db.Model):
