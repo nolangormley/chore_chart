@@ -1,13 +1,14 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from database import db
-from models import User, Chore, ChoreLog
+from models import User, Chore, ChoreLog, ChoreSchedule
 from flasgger import Swagger
 from werkzeug.utils import secure_filename
 import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 from email.mime.base import MIMEBase
 from email import encoders
 from ics import Calendar, Event
@@ -256,6 +257,8 @@ def handle_chores():
               type: string
             description:
               type: string
+            location:
+              type: string
             points:
               type: integer
             is_recurring:
@@ -279,6 +282,7 @@ def handle_chores():
         chore = Chore(
             title=title,
             description=data.get('description'),
+            location=data.get('location', 'Inside'),
             points=int(points),
             is_recurring=data.get('is_recurring', False)
         )
@@ -289,11 +293,11 @@ def handle_chores():
     chores = Chore.query.filter_by(is_deleted=False).order_by(Chore.created_at.desc()).all()
     return jsonify([c.to_dict() for c in chores])
 
-@app.route('/api/chores/<int:chore_id>', methods=['PUT'])
+@app.route('/api/chores/<int:chore_id>', methods=['PUT', 'DELETE'])
 @login_required
-def update_chore(chore_id):
+def update_delete_chore(chore_id):
     """
-    Update a chore
+    Update or Delete a chore
     ---
     tags:
       - Chores
@@ -304,7 +308,7 @@ def update_chore(chore_id):
         required: true
       - name: body
         in: body
-        required: true
+        required: false
         schema:
           type: object
           properties:
@@ -312,23 +316,33 @@ def update_chore(chore_id):
               type: string
             description:
               type: string
+            location:
+              type: string
             points:
               type: integer
             is_recurring:
               type: boolean
     responses:
       200:
-        description: Chore updated
+        description: Chore updated/deleted
       404:
         description: Chore not found
     """
     chore = Chore.query.get_or_404(chore_id)
+    
+    if request.method == 'DELETE':
+        chore.is_deleted = True
+        db.session.commit()
+        return jsonify({'message': 'Chore deleted'})
+
     data = request.json
     
     if 'title' in data:
         chore.title = data['title']
     if 'description' in data:
         chore.description = data['description']
+    if 'location' in data:
+        chore.location = data['location']
     if 'points' in data:
         chore.points = int(data['points'])
     if 'is_recurring' in data:
@@ -565,6 +579,23 @@ def send_calendar_invite(chore_id):
         if chore.description:
             e.description += f"\n\nDescription: {chore.description}"
         c.events.add(e)
+        
+        # Save Schedule to DB
+        try:
+            dt_parse = dt_str
+            if dt_parse.endswith('Z'):
+                dt_parse = dt_parse[:-1]
+            scheduled_dt = datetime.fromisoformat(dt_parse)
+            
+            schedule = ChoreSchedule(
+                chore_id=chore.id,
+                user_id=user.id,
+                scheduled_at=scheduled_dt
+            )
+            db.session.add(schedule)
+            db.session.commit()
+        except Exception as schedule_err:
+            print(f"Error saving schedule: {schedule_err}")
         
         ics_content = str(c)
         

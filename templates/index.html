@@ -72,6 +72,15 @@
             <input type="hidden" id="choreId">
             <input type="text" id="choreTitle" placeholder="Chore Title (e.g., Wash Dishes)" required>
             <textarea id="choreDesc" placeholder="Description (optional)" rows="3"></textarea>
+
+            <div style="margin-bottom: 1rem;">
+                <select id="choreLocation">
+                    <option value="Inside">Inside</option>
+                    <option value="Outside">Outside</option>
+                    <option value="Garage">Garage</option>
+                </select>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <input type="number" id="chorePoints" placeholder="Points" required min="1" value="10">
                 <div
@@ -92,6 +101,13 @@
     <div class="modal-content">
         <h3 style="margin-bottom: 1rem;">Add to Calendar</h3>
         <p style="color: var(--text-muted); margin-bottom: 1rem;">Choose a date and time for this chore.</p>
+        <div id="calendarWeather"
+            style="display: none; margin-bottom: 1rem; padding: 1rem; background: var(--background); border: 1px solid var(--border); border-radius: var(--radius);">
+            <div style="font-weight: bold; margin-bottom: 0.5rem;">Weather Forecast (Outside)</div>
+            <div id="weatherContent" style="font-size: 0.9rem; color: var(--text-muted);">Loading weather...</div>
+            <div id="weatherRecommendation"
+                style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--primary); font-weight: 500;"></div>
+        </div>
         <form onsubmit="handleSendInvite(event)">
             <input type="hidden" id="calendarChoreId">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

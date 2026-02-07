@@ -3,7 +3,7 @@
 {% block content %}
 <div class="flex-between" style="margin-bottom: 2rem;">
     <h2>User Profile</h2>
-    <a href="{{ url_for('index') }}" class="btn" style="background: var(--surface); border: 1px solid var(--border);">
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
         Back to Dashboard
     </a>
 </div>
@@ -97,7 +97,7 @@
 
         } catch (err) {
             console.error(err);
-            alert('Failed to load user details');
+            showToast('Failed to load user details', 'error');
         }
     });
 
@@ -119,13 +119,13 @@
             });
 
             if (res.ok) {
-                alert('Profile updated successfully!');
+                showToast('Profile updated successfully!', 'success');
             } else {
-                alert('Failed to update profile.');
+                showToast('Failed to update profile.', 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('Error updating profile.');
+            showToast('Error updating profile.', 'error');
         }
     }
 
@@ -147,12 +147,13 @@
                 document.getElementById('profileImage').src = data.url;
                 document.getElementById('profileImage').style.display = 'block';
                 document.getElementById('profilePlaceholder').style.display = 'none';
+                showToast('Profile picture uploaded!', 'success');
             } else {
-                alert('Failed to upload picture: ' + data.error);
+                showToast('Failed to upload picture: ' + data.error, 'error');
             }
         } catch (err) {
             console.error(err);
-            alert('Error uploading picture.');
+            showToast('Error uploading picture.', 'error');
         }
     }
 </script>

@@ -39,6 +39,7 @@ class Chore(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(120), nullable=False)
     description = db.Column(db.String(255), nullable=True)
+    location = db.Column(db.String(50), default='Inside')
     points = db.Column(db.Integer, nullable=False)
     is_recurring = db.Column(db.Boolean, default=False)
     is_deleted = db.Column(db.Boolean, default=False)
@@ -49,6 +50,7 @@ class Chore(db.Model):
             'id': self.id,
             'title': self.title,
             'description': self.description,
+            'location': self.location,
             'points': self.points,
             'is_recurring': self.is_recurring,
             'created_at': self.created_at.isoformat()
@@ -59,6 +61,19 @@ class Chore(db.Model):
             last_log = max(self.logs, key=lambda x: x.completed_at)
             data['last_completed_at'] = last_log.completed_at.isoformat()
             
+        # Scheduling
+        now = datetime.utcnow()
+        if hasattr(self, 'schedules') and self.schedules:
+            active_schedules = [s for s in self.schedules if s.scheduled_at > now]
+            active_schedules.sort(key=lambda x: x.scheduled_at)
+            data['schedules'] = [{
+                'user_name': s.user.username if s.user else 'Unknown',
+                'user_avatar': s.user.profile_picture if s.user else None,
+                'scheduled_at': s.scheduled_at.isoformat()
+            } for s in active_schedules]
+        else:
+            data['schedules'] = []
+
         return data
 
 class ChoreLog(db.Model):
@@ -82,3 +97,14 @@ class ChoreLog(db.Model):
             'chore_title': self.chore.title if self.chore else 'Unknown',
             'username': self.user.username if self.user else 'Unknown'
         }
+
+class ChoreSchedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    chore_id = db.Column(db.Integer, db.ForeignKey('chore.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    scheduled_at = db.Column(db.DateTime, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    chore = db.relationship('Chore', backref=db.backref('schedules', lazy=True))
+    user = db.relationship('User', backref=db.backref('schedules', lazy=True))
