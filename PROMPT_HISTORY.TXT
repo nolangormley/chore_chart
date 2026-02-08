@@ -1,0 +1,19 @@
+I want to create an application that has one main purpose. It is going to be a webpage where recurring chores show up and users can mark them complete or delete them. These chores will have points attached to them and the user who completes them will get these points. These should be stored as a transactional way so that we can later pull statistics on what tasks a user completed and when. 
+
+Use flask and sqlite for the backend and sql server. Use a lightweight frontend framework.
+
+Create a page for each user, so that I can click on a user from the leaderboard and see their details. This should hold the following information: first name, last name, pronouns, email address, and an optional picture (which you should be able to upload by clicking on the box that holds the picture)
+
+add a button to each task on the dashboard that is called "add to calendar". This should pull up a prompt that asks you to choose a date and time, then it will send a google calendar invite to the email that is under the user that is selected to complete tasks. If there is no user selected, do not pull up the initial prompt, show an error message that tells them to select a user.
+
+add an option for the ics calendar invite to be recurring. There should be a dropdown that makes it weekly, biweekly, or monthly for the day of the week and time that you choose
+
+Add a location column to each task. You should be able to choose between inside, outside, and garage. This should show up on the task boxes to the right of the last done date
+
+When a user selects calendar for a task that is outdoors, show them a weather forecast using the weather.gov forecast -- here's a link to the documentation https://api.weather.gov/
+
+You should also give a recommendation on the "best time" (Sunniest and warmest if it's cold out, shadiest and coolest if it's hot out) within the next 48 hours to do this chore
+
+can you cache the weather call on page load so that the weather data loads instantly when the calendar page is opened?
+
+When a user adds a chore to their calendar, display their avatar (profile picture) on the Chore card in the middle, right quadrant of the card. When a user hovers over this, it should display the user's name and when they have signed up for this task. Once the time of the calendar invite has passed, the avatar should dissapear 
