@@ -16,7 +16,7 @@
         {% endif %}
         {% endwith %}
 
-        <form method="POST" action="{{ url_for('login') }}">
+        <form method="POST" action="{{ url_for('auth.login') }}">
             <div style="margin-bottom: 1.5rem;">
                 <label for="username" style="display: block; margin-bottom: 0.5rem;">Username</label>
                 <input type="text" id="username" name="username" required style="width: 100%;">

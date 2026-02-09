@@ -37,14 +37,6 @@ A web application for managing household chores, tracking points, and visualizin
 
 ## Running the Application
 
-### Option 1: Using the Batch Script (Windows)
-
-Simply double-click `run_server.bat`. This script will:
-*   Display your local IP address (for accessing the app from other devices on your Wi-Fi).
-*   Start the server.
-
-### Option 2: Manual Start
-
 Run the following command in your terminal:
 
 ```bash

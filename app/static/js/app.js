@@ -51,7 +51,7 @@ async function handleAddUser(e) {
             document.getElementById('newUsername').value = '';
             fetchUsers();
         } else {
-            alert('Failed to create user');
+            showToast('Failed to create user', 'error');
         }
     } catch (err) {
         console.error(err);
@@ -81,7 +81,7 @@ async function handleSaveChore(e) {
             closeModal('choreModal');
             fetchChores();
         } else {
-            alert('Failed to save chore');
+            showToast('Failed to save chore', 'error');
         }
     } catch (err) {
         console.error(err);
@@ -90,12 +90,12 @@ async function handleSaveChore(e) {
 
 async function completeChore(choreId, points) {
     if (!activeUser) {
-        alert('Please select a user first!');
+        showToast('Please select a user first!', 'error');
         document.getElementById('userSelect').focus();
         return;
     }
 
-    if (!confirm(`Mark this chore as done by ${activeUser.username} for ${points} points?`)) return;
+    // if (!confirm(`Mark this chore as done by ${activeUser.username} for ${points} points?`)) return;
 
     try {
         const res = await fetch(`/api/chores/${choreId}/complete`, {
@@ -104,7 +104,10 @@ async function completeChore(choreId, points) {
             body: JSON.stringify({ user_id: activeUser.id })
         });
 
+        const data = await res.json();
+
         if (res.ok) {
+            showToast(`Chore completed! ${activeUser.username} earned ${data.points_earned} points.`, 'success');
             // Refresh data
             await fetchUsers();
             await fetchChores();
