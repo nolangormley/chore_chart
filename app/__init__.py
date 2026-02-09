@@ -6,7 +6,14 @@ from flasgger import Swagger
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+basedir = os.path.abspath(os.path.dirname(__file__))
+# Assumes app/__init__.py is one level deep from root
+dotenv_path = os.path.join(os.path.dirname(basedir), '.env')
+
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path, override=True)
+else:
+    load_dotenv(override=True)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-this-for-production')
