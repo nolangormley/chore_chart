@@ -1,5 +1,9 @@
-from app import app, db
-from models import User
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from app import app
+from app.extensions import db
+from app.models import User
 
 def delete_user(username):
     with app.app_context():

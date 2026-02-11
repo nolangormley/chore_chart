@@ -328,12 +328,54 @@ def send_calendar_invite(chore_id):
         msg.attach(part)
 
         # Send Email
+        api_key = current_app.config.get('MAIL_API_KEY')
         server_conf = current_app.config.get('MAIL_SERVER')
         username_conf = current_app.config.get('MAIL_USERNAME')
         password_conf = current_app.config.get('MAIL_PASSWORD')
         port_conf = current_app.config.get('MAIL_PORT')
+        sender = current_app.config.get('MAIL_DEFAULT_SENDER')
         
-        if server_conf and username_conf and password_conf:
+        if api_key:
+            # Send using Brevo API (v3) - Works on PythonAnywhere Free Tier
+            url = "https://api.brevo.com/v3/smtp/email"
+            headers = {
+                "accept": "application/json",
+                "api-key": api_key,
+                "content-type": "application/json"
+            }
+            
+            try:
+                import requests
+                import base64
+                
+                encoded_ics = base64.b64encode(ics_content.encode('utf-8')).decode('utf-8')
+                
+                payload = {
+                    "sender": {"email": sender, "name": "Chore Chart"},
+                    "to": [{"email": user.email, "name": user.username}],
+                    "subject": f"Chore Reminder: {chore.title}",
+                    "htmlContent": f"<html><body><p>Hello {user.username},</p><p>Please find attached a calendar invite for your chore: {chore.title}.</p></body></html>",
+                    "attachment": [
+                        {
+                            "name": "invite.ics", 
+                            "content": encoded_ics
+                        }
+                    ]
+                }
+
+                response = requests.post(url, json=payload, headers=headers)
+                
+                if response.status_code in [200, 201, 202]:
+                     print(f"Sent email via API to {user.email}")
+                     return jsonify({'message': 'Calendar invite sent to ' + user.email})
+                else:
+                     print(f"API Error: {response.text}")
+                     return jsonify({'error': f'Failed to send email via API: {response.text}'}), 500
+            except Exception as api_err:
+                 print(f"API Exception: {api_err}")
+                 return jsonify({'error': f'Failed to send email via API: {str(api_err)}'}), 500
+
+        elif server_conf and username_conf and password_conf:
              try:
                  with smtplib.SMTP(server_conf, port_conf) as server:
                     if current_app.config.get('MAIL_USE_TLS'):
@@ -344,6 +386,8 @@ def send_calendar_invite(chore_id):
                  return jsonify({'message': 'Calendar invite sent to ' + user.email})
              except Exception as smtp_err:
                  print(f"SMTP Error: {smtp_err}")
+                 if "111" in str(smtp_err) or "Connection refused" in str(smtp_err):
+                     return jsonify({'error': 'Failed to send email: Connection refused (PythonAnywhere free tier blocks SMTP port 587). Please configure MAIL_API_KEY to use HTTP API.'}), 500
                  return jsonify({'error': f'Failed to send email: {str(smtp_err)}'}), 500
         else:
             print("--- EMAIL (MOCK - MISSING CONFIG) ---")

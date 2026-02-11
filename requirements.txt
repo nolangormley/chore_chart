@@ -5,3 +5,4 @@ flask-login
 flasgger
 ics
 python-dotenv
+requests

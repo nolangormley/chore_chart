@@ -1,4 +1,9 @@
-from app import app, db, Chore, User, ChoreLog
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from app import app
+from app.extensions import db
+from app.models import Chore, User, ChoreLog
 from datetime import datetime, timedelta
 
 def verify():

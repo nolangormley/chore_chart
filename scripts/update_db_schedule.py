@@ -1,4 +1,8 @@
-from app import app, db
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from app import app
+from app.extensions import db
 from sqlalchemy import text
 
 def add_schedule_table():
