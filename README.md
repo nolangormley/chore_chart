@@ -55,4 +55,9 @@ Access the application at: `http://localhost:5000`
 ## Homework 3 Notes
 
 I integrated APIs in a few ways here, firstly, this website is a simple CRUD application which allows users to create, read, update, assign themselves, and delete chores. You can see the API documentation at http://{web_url}:5000/apidocs/. I added weather data into this to inform the user on when the best time to schedule an outdoor chore would be. I used the [National Weather Service](https://api.weather.gov/) API to get this data. I also added a calendar invite feature, which allows the user to send themselves a calendar invite for a chore. This does not technically use an API, but it uses smtplib to send an email with the calendar invite attached. This can use any SMTP server, but I used Brevo.
+
+## Homework 4 Notes
+
+I added a login page to this website that will allow this application to be run on the web with less risk to the data in the database. I also spent way too long debugging the brevo SMTP call, which ended up being a limitation of PythonAnywhere. You are only allowed HTTP[s] requests, not SMTP. I ended up using a webhook to send the email, which is not as secure as using SMTP, but it works.
+
 ### 
